@@ -1,0 +1,12 @@
+p1:
+    ip: "172.16.1.2"
+    port: 1234
+    gripper_port: 1235
+p2:
+    ip: "172.16.2.2"
+    port: 4321
+    gripper_port: 4322
+
+
+
+
