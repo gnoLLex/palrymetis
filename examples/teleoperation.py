@@ -1,26 +1,12 @@
-from polymetis import RobotInterface, GripperInterface
 from palrymetis.teleoperation import Teleoperation
+from palrymetis.panda import Panda
 
 if __name__ == "__main__":
     # Initialize robot interface
-    operated_robot = RobotInterface(
-        ip_address="localhost",
-        port="4321"
-    )
-    imitator_robot = RobotInterface(
-        ip_address="localhost",
-        port="1234"
-    )
-    operated_robot_hand = GripperInterface(
-        ip_address="localhost",
-        port="4322"
-    )
-    imitator_robot_hand = GripperInterface(
-        ip_address="localhost",
-        port="1235"
-    )
+    operated_panda = Panda.from_alr_name("p2")
+    imitator_panda = Panda.from_alr_name("p1")
 
-    teleoperation = Teleoperation(operated_robot, operated_robot_hand, imitator_robot, imitator_robot_hand)
+    teleoperation = Teleoperation(operated_panda, imitator_panda)
     teleoperation.run() # runs until ctrl-c
     teleoperation.cleanup()
 

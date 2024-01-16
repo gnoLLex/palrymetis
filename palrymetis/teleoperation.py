@@ -6,6 +6,8 @@ import torchcontrol as toco
 
 from typing import Dict
 
+from palrymetis.panda import Panda
+
 class HumanController(toco.PolicyModule):
     # stolen from SimulationFramework
     def __init__(self, robot, regularize=True):
@@ -59,25 +61,23 @@ GRASP_THRESHOLD = 0.03
 GRASP_FORCE = 20.0
 
 class Teleoperation:
-    def __init__(self, operated_robot, operated_hand, imitator_robot, imitator_hand):
+    def __init__(self, operated_robot: Panda, imitator_robot: Panda):
         self.logger = spdlog.ConsoleLogger("teleoperation")
         self.operated_robot = operated_robot
         self.imitator_robot = imitator_robot
-        self.operated_hand = operated_hand
-        self.imitator_hand = imitator_hand
 
-        self.human_controller = HumanController(self.operated_robot)
-        self.imitation_controller = ImitationController(self.imitator_robot)
+        self.human_controller = HumanController(self.operated_robot.arm)
+        self.imitation_controller = ImitationController(self.imitator_robot.arm)
 
         # Reset imitator to operated robots current positions
         self.logger.info("Setting up imitator")
-        self.imitator_robot.move_to_joint_positions(self.operated_robot.get_joint_positions())
-        self.imitator_hand.goto(self.operated_hand.get_state().width, GRIPPER_SPEED, 0.1)
+        self.imitator_robot.arm.move_to_joint_positions(self.operated_robot.arm.get_joint_positions())
+        self.imitator_robot.gripper.goto(self.operated_robot.gripper.get_state().width, GRIPPER_SPEED, 0.1)
         self.logger.info("Finished setting up imitator")
 
         self.logger.info("Sending torch policies")
-        self.operated_robot.send_torch_policy(self.human_controller, blocking=False)
-        self.imitator_robot.send_torch_policy(self.imitation_controller, blocking=False)
+        self.operated_robot.arm.send_torch_policy(self.human_controller, blocking=False)
+        self.imitator_robot.arm.send_torch_policy(self.imitation_controller, blocking=False)
         self.logger.info("Finished sending torch policies")
 
         # setup up signal for cleanup
@@ -90,12 +90,12 @@ class Teleoperation:
         last_issued = 10
         while self.running:
             # update arm target position
-            joint_pos_desired = self.operated_robot.get_joint_positions()
-            self.imitator_robot.update_desired_joint_positions(joint_pos_desired)
+            joint_pos_desired = self.operated_robot.arm.get_joint_positions()
+            self.imitator_robot.arm.update_desired_joint_positions(joint_pos_desired)
 
             # mirror gripper state
-            operated_hand_state = self.operated_hand.get_state()
-            desired_gripper_width = operated_hand_state.width
+            operated_gripper_state = self.operated_robot.gripper.get_state()
+            desired_gripper_width = operated_gripper_state.width
 
 
             # don not send a new gripper command if the desired width is already reached (within margin)
@@ -105,7 +105,7 @@ class Teleoperation:
 
             if desired_gripper_width < GRASP_THRESHOLD and not last_command == "grasp": # or last_issued < desired_gripper_width):
                 self.logger.info("Grasping")
-                self.imitator_hand.grasp(
+                self.imitator_robot.gripper.grasp(
                     speed=GRIPPER_SPEED,
                     force=GRASP_FORCE,
                     grasp_width=desired_gripper_width,
@@ -116,7 +116,7 @@ class Teleoperation:
 
             elif desired_gripper_width > GRASP_THRESHOLD:
                 self.logger.info("Moving")
-                self.imitator_hand.goto(desired_gripper_width, GRIPPER_SPEED, 5)
+                self.imitator_robot.gripper.goto(desired_gripper_width, GRIPPER_SPEED, 5)
                 last_command = "move"
             
             last_issued = desired_gripper_width
@@ -126,7 +126,6 @@ class Teleoperation:
 
     def cleanup(self):
         self.logger.info("Terminating policies")
-        self.operated_robot.send_torch_policy(self.human_controller, blocking=False)
-        self.operated_robot.terminate_current_policy()
-        self.imitator_robot.terminate_current_policy()
+        self.operated_robot.arm.terminate_current_policy()
+        self.imitator_robot.arm.terminate_current_policy()
 
