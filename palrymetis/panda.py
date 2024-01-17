@@ -1,5 +1,6 @@
 from polymetis import RobotInterface, GripperInterface
 
+# TODO: automatically restart controller if server complains
 class Panda:
     def __init__(self, ip, arm_port, gripper_port):
         self.arm = RobotInterface(

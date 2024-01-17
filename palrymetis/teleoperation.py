@@ -80,6 +80,8 @@ class Teleoperation:
         self.imitator_robot.arm.send_torch_policy(self.imitation_controller, blocking=False)
         self.logger.info("Finished sending torch policies")
 
+        self.running = True
+
         # setup up signal for cleanup
         signal.signal(signal.SIGINT, self.__sig_handler)
 
@@ -104,7 +106,7 @@ class Teleoperation:
 
 
             if desired_gripper_width < GRASP_THRESHOLD and not last_command == "grasp": # or last_issued < desired_gripper_width):
-                self.logger.info("Grasping")
+                self.logger.debug("Grasping")
                 self.imitator_robot.gripper.grasp(
                     speed=GRIPPER_SPEED,
                     force=GRASP_FORCE,
@@ -115,7 +117,7 @@ class Teleoperation:
                 last_command = "grasp"
 
             elif desired_gripper_width > GRASP_THRESHOLD:
-                self.logger.info("Moving")
+                self.logger.debug("Moving gripper")
                 self.imitator_robot.gripper.goto(desired_gripper_width, GRIPPER_SPEED, 5)
                 last_command = "move"
             
