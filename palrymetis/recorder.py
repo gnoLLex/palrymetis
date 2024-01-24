@@ -21,7 +21,7 @@ class Recorder:
 
     def _record(self):
         while self.running():
-            self.recordings.append(self.robot.arm.get_robot_state())
+            self.recordings.append(self.robot.robot.get_robot_state())
 
     def stop(self):
         if self.thread:

@@ -24,7 +24,7 @@ get_robot_attr() {
 try_activate_env polymetis
 
 if [[ $1 == "robot" ]]; then
-    launch_robot.py robot_client=franka_hardware robot_client.executable_cfg.robot_ip=$(get_robot_attr $2 ip) port=$(get_robot_attr $2 port)
+    launch_robot.py robot_client=franka_hardware robot_client.executable_cfg.robot_ip=$(get_robot_attr $2 robot_ip) port=$(get_robot_attr $2 robot_port)
 
     if [ $? -eq 0 ]; then
         echo "Command was successful"
@@ -37,5 +37,5 @@ if [[ $1 == "robot" ]]; then
         echo -e "\e[1;31m$hash_line\e[0m"
     fi
 elif [[ $1 == "gripper" ]]; then
-    launch_gripper.py gripper=franka_hand gripper.executable_cfg.robot_ip=$(get_robot_attr $2 ip) port=$(get_robot_attr $2 gripper_port)
+    launch_gripper.py gripper=franka_hand gripper.executable_cfg.robot_ip=$(get_robot_attr $2 robot_ip) port=$(get_robot_attr $2 gripper_port)
 fi

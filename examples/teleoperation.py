@@ -15,5 +15,5 @@ if __name__ == "__main__":
     recorder.stop()
     teleoperation.cleanup()
 
-    recorder.save()
+    #recorder.save()
 

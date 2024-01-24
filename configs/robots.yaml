@@ -1,12 +1,11 @@
 p1:
-    ip: "172.16.1.2"
-    port: 1234
+    robot_ip: "172.16.1.2"
+    server_ip: "141.3.53.152"
+    robot_port: 1234
     gripper_port: 1235
 p2:
-    ip: "172.16.2.2"
-    port: 4321
+    robot_ip: "172.16.2.2"
+    server_ip: "141.3.53.152"
+    robot_port: 4321
     gripper_port: 4322
-
-
-
 
