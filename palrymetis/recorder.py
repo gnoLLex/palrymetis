@@ -7,6 +7,7 @@ from tqdm import tqdm
 from queue import Queue
 from typing import Optional, List
 
+from pynput import keyboard
 from polymetis_pb2 import RobotState
 from palrymetis.panda import Panda
 
@@ -33,6 +34,7 @@ GRIPPER_STATE_MEMBERS = [
         'width'
 ]
 
+
 # TODO: gripper state subscriptions
 class Recorder:
     def __init__(
@@ -47,8 +49,8 @@ class Recorder:
         self.logger = spdlog.ConsoleLogger("recorder")
         self.robot = robot
         self.recordings = {}
-        self.thread = None
         self.running = running
+        self.record = False
         self.hz = hz
         
         subscriptions = subscriptions if subscriptions else ROBOT_STATE_MEMBERS
@@ -62,31 +64,48 @@ class Recorder:
         for sub in self.subscriptions:
             self.recordings[sub] = []
 
-    def start(self):
-        """
-        """
+        self.last_timestamp = 0
+
+        self.logger.debug("Starting key thread")
+        self.listener = keyboard.Listener(on_press=self.on_press)
+        self.listener.start()
+
+        self.logger.debug("Starting record thread")
         self.thread = threading.Thread(target=self._record)
         self.thread.start()
 
     def _record(self):
-        last_timestamp = 0
         while self.running():
-            state = self.robot.robot.get_robot_state()
+            if self.record:
+                state = self.robot.robot.get_robot_state()
 
-            # skip if we receive the same state
-            if not last_timestamp == state.timestamp:
-                for sub in self.subscriptions:
-                    self.recordings[sub].append(getattr(state, sub))
-                time.sleep(1 / self.hz)
+                # skip if we receive the same state
+                if not self.last_timestamp == state.timestamp:
+                    for sub in self.subscriptions:
+                        self.recordings[sub].append(getattr(state, sub))
+                    time.sleep(1 / self.hz)
 
-            last_timestamp = state.timestamp
+                last_timestamp = state.timestamp
 
-    def stop(self):
+    def on_press(self, key):
+        try:
+            if key.char == 'r':
+                if not self.record:
+                    self.record = True
+                    self.logger.info("Started recording")
+            elif key.char == 's':
+                if self.record:
+                    self.record = False
+                    self.logger.info("Stopped recording")
+        except AttributeError:
+            pass
+    
+
+    def cleanup(self):
         """
         """
-        if self.thread:
-            self.thread.join()
-            self.thread = None
+        self.listener.stop()
+        self.thread.join()
 
     def save(self):
         """

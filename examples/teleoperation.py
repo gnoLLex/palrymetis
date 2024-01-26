@@ -14,10 +14,10 @@ if __name__ == "__main__":
             lambda: teleoperation.running,
             ['timestamp', 'joint_positions']
     )
-    recorder.start()
     teleoperation.run() # runs until ctrl-c
-    recorder.stop()
+
     teleoperation.cleanup()
+    recorder.cleanup()
 
     recorder.save()
 
