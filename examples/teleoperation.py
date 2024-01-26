@@ -9,11 +9,15 @@ if __name__ == "__main__":
     imitator_panda = Panda.from_alr_name("p1")
 
     teleoperation = Teleoperation(operated_panda, imitator_panda)
-    recorder = Recorder(imitator_panda, lambda: teleoperation.running)
+    recorder = Recorder(
+            imitator_panda,
+            lambda: teleoperation.running,
+            ['timestamp', 'joint_positions']
+    )
     recorder.start()
     teleoperation.run() # runs until ctrl-c
     recorder.stop()
     teleoperation.cleanup()
 
-    #recorder.save()
+    recorder.save()
 
