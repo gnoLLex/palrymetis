@@ -7,7 +7,6 @@ from tqdm import tqdm
 from queue import Queue
 from typing import Optional, List
 
-from pynput import keyboard
 from polymetis_pb2 import RobotState
 from palrymetis.panda import Panda
 
@@ -33,7 +32,6 @@ GRIPPER_STATE_MEMBERS = [
         'timestamp',
         'width'
 ]
-
 
 # TODO: gripper state subscriptions
 class Recorder:
@@ -75,6 +73,7 @@ class Recorder:
         self.thread.start()
 
     def _record(self):
+        last_timestamp = 0
         while self.running():
             if self.record:
                 state = self.robot.robot.get_robot_state()

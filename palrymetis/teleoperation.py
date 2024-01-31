@@ -65,7 +65,7 @@ GRIPPER_OPEN_THRESHOLD = 0.05
 class Teleoperation:
     def __init__(self, operated_panda: Panda, imitator_panda: Panda):
         self.logger = spdlog.ConsoleLogger("teleoperation")
-        # self.logger.set_level(spdlog.LogLevel.DEBUG)
+        self.logger.set_level(spdlog.LogLevel.DEBUG)
         self.operated_panda = operated_panda
         self.imitator_panda = imitator_panda
 
