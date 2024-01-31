@@ -112,5 +112,5 @@ class Recorder:
         self.logger.info(f"Saving to {full_path}")
         if 'timestamp' in self.subscriptions:
             self.recordings['timestamp'] = [ts.seconds * 1e9 + ts.nanos for ts in self.recordings['timestamp']] 
-        pandas.DataFrame(self.recordings).to_csv(full_path, float_format='%32.f')
+        pandas.DataFrame(self.recordings).to_csv(full_path, float_format='%32.f', index=False)
 

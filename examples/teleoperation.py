@@ -9,7 +9,8 @@ if __name__ == "__main__":
     recorder = Recorder(
             imitator_panda,
             lambda: teleoperation.running,
-            ['timestamp', 'joint_positions']
+            ['timestamp', 'joint_positions', 'joint_velocities'],
+            hz=10
     )
     recorder.start()
     teleoperation.run()
