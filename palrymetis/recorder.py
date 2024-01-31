@@ -25,15 +25,11 @@ ROBOT_STATE_MEMBERS = [
 ]
 
 GRIPPER_STATE_MEMBERS = [
-        'error_code',
         'is_grasped',
         'is_moving',
-        'prev_command_successful',
-        'timestamp',
         'width'
 ]
 
-# TODO: gripper state subscriptions
 class Recorder:
     def __init__(
         self,
@@ -50,11 +46,12 @@ class Recorder:
         self.running = running
         self.record = False
         self.hz = hz
+        self.period = 1 / self.hz
         
-        subscriptions = subscriptions if subscriptions else ROBOT_STATE_MEMBERS
+        subscriptions = subscriptions if subscriptions else ROBOT_STATE_MEMBERS + GRIPPER_STATE_MEMBERS
 
         for sub in subscriptions:
-            if not sub in ROBOT_STATE_MEMBERS: # and not sub in GRIPPER_STATE_MEMBERS 
+            if not sub in ROBOT_STATE_MEMBERS + GRIPPER_STATE_MEMBERS: # and not sub in GRIPPER_STATE_MEMBERS 
                 self.logger.error(f"No subscriptable member called {sub} found.\nTry {ROBOT_STATE_MEMBERS}") # or {GRIPPER_STATE_MEMBERS}")
 
         self.subscriptions = subscriptions
@@ -62,6 +59,8 @@ class Recorder:
         for sub in self.subscriptions:
             self.recordings[sub] = []
 
+        self.i = 0
+        self.t0 = time.time()
         self.last_timestamp = 0
 
         self.logger.debug("Starting record thread")
@@ -73,12 +72,19 @@ class Recorder:
         while self.running():
             if self.record:
                 state = self.robot.robot.get_robot_state()
+                gripper_state = self.robot.gripper.get_state()
 
                 # skip if we receive the same state
                 if not self.last_timestamp == state.timestamp:
                     for sub in self.subscriptions:
-                        self.recordings[sub].append(getattr(state, sub))
-                    time.sleep(1 / self.hz)
+                        if sub in GRIPPER_STATE_MEMBERS:
+                            self.recordings[sub].append(getattr(gripper_state, sub))
+                        else:
+                            self.recordings[sub].append(getattr(state, sub))
+                    self.i += 1
+                    delta = self.t0 + self.period * self.i - time.time()
+                    if delta > 0:
+                        time.sleep(delta)
 
                 last_timestamp = state.timestamp
 
@@ -112,5 +118,5 @@ class Recorder:
         self.logger.info(f"Saving to {full_path}")
         if 'timestamp' in self.subscriptions:
             self.recordings['timestamp'] = [ts.seconds * 1e9 + ts.nanos for ts in self.recordings['timestamp']] 
-        pandas.DataFrame(self.recordings).to_csv(full_path, float_format='%32.f', index=False)
+        pandas.DataFrame(self.recordings).to_csv(full_path, float_format='%32.32f', index=False)
 
