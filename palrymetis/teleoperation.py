@@ -1,12 +1,13 @@
 import torch
 import spdlog
 import signal
+import threading
 
 import torchcontrol as toco
 
 from typing import Dict
 
-from palrymetis.panda import Panda
+from .panda import Panda
 from polymetis import RobotInterface
 
 class HumanController(toco.PolicyModule):
@@ -86,7 +87,6 @@ class Teleoperation:
 
         # setup up signal for cleanup
         signal.signal(signal.SIGINT, self.__sig_handler)
-
 
     def run(self):
         self.running = True

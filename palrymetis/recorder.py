@@ -8,7 +8,7 @@ from queue import Queue
 from typing import Optional, List
 
 from polymetis_pb2 import RobotState
-from palrymetis.panda import Panda
+from .panda import Panda
 
 ROBOT_STATE_MEMBERS = [
         'joint_positions',
@@ -64,10 +64,6 @@ class Recorder:
 
         self.last_timestamp = 0
 
-        self.logger.debug("Starting key thread")
-        self.listener = keyboard.Listener(on_press=self.on_press)
-        self.listener.start()
-
         self.logger.debug("Starting record thread")
         self.thread = threading.Thread(target=self._record)
         self.thread.start()
@@ -86,24 +82,15 @@ class Recorder:
 
                 last_timestamp = state.timestamp
 
-    def on_press(self, key):
-        try:
-            if key.char == 'r':
-                if not self.record:
-                    self.record = True
-                    self.logger.info("Started recording")
-            elif key.char == 's':
-                if self.record:
-                    self.record = False
-                    self.logger.info("Stopped recording")
-        except AttributeError:
-            pass
-    
+    def start(self):
+        self.record = True
+
+    def stop(self):
+        self.record = False
 
     def cleanup(self):
         """
         """
-        self.listener.stop()
         self.thread.join()
 
     def save(self):

@@ -1,7 +1,4 @@
-from palrymetis.teleoperation import Teleoperation
-from palrymetis.panda import Panda
-from palrymetis.recorder import Recorder
-import tqdm
+from palrymetis import Teleoperation, Panda, Recorder
 
 if __name__ == "__main__":
     # Initialize robot interface
@@ -14,7 +11,9 @@ if __name__ == "__main__":
             lambda: teleoperation.running,
             ['timestamp', 'joint_positions']
     )
-    teleoperation.run() # runs until ctrl-c
+    recorder.start()
+    teleoperation.run()
+    recorder.stop()
 
     teleoperation.cleanup()
     recorder.cleanup()
