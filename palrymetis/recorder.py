@@ -33,19 +33,19 @@ GRIPPER_STATE_MEMBERS = [
 class Recorder:
     def __init__(
         self,
-        robot: Panda,
+        panda: Panda,
         running: callable,
         subscriptions: Optional[List[str]] = None,
-        hz: float = 10.0
+        hz: float = None
     ):
         """
         """
         self.logger = spdlog.ConsoleLogger("recorder")
-        self.robot = robot
+        self.panda = panda
         self.recordings = {}
         self.running = running
         self.record = False
-        self.hz = hz
+        self.hz = hz if hz else self.panda.robot.hz
         self.period = 1 / self.hz
         
         subscriptions = subscriptions if subscriptions else ROBOT_STATE_MEMBERS + GRIPPER_STATE_MEMBERS
@@ -59,9 +59,11 @@ class Recorder:
         for sub in self.subscriptions:
             self.recordings[sub] = []
 
+
         self.i = 0
         self.t0 = time.time()
         self.last_timestamp = 0
+
 
         self.logger.debug("Starting record thread")
         self.thread = threading.Thread(target=self._record)
@@ -71,8 +73,8 @@ class Recorder:
         last_timestamp = 0
         while self.running():
             if self.record:
-                state = self.robot.robot.get_robot_state()
-                gripper_state = self.robot.gripper.get_state()
+                state = self.panda.robot.get_robot_state()
+                gripper_state = self.panda.gripper.get_state()
 
                 # skip if we receive the same state
                 if not self.last_timestamp == state.timestamp:
