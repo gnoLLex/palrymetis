@@ -115,7 +115,7 @@ class Panda:
             self.connect()
 
     def close(self):
-        if self.robot:
+        if self.is_running_policy():
             try:
                 self.logger.debug("Terminating the current policy")
                 state_log = self.robot.terminate_current_policy()

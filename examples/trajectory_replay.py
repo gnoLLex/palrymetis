@@ -7,6 +7,7 @@ from typing import List, Dict
 import torch
 import ast
 import time
+import sys
 import tqdm
 
 
@@ -19,17 +20,12 @@ if __name__ == "__main__":
         import pandas
         from datetime import datetime
 
-        save_dir = "outputs/recordings/"
-
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-    
-        full_path = os.path.join(save_dir, filename)
-
         data = dict()
 
-        csv = pandas.read_csv(full_path, index_col=False)
+        csv = pandas.read_csv(filename, index_col=False)
         for key in tqdm.tqdm(csv.columns.values):
+            if not key == "joint_positions" and not key == "joint_velocities":
+                continue
             if key == "timestamp":
                 data[key] = [val for val in csv[key]]
                 continue
@@ -37,7 +33,7 @@ if __name__ == "__main__":
 
         return data
 
-    traj = load_traj("20240131171525.csv")
+    traj = load_traj(sys.argv[1])
 
     policy = toco.policies.JointTrajectoryExecutor(
         joint_pos_trajectory=traj["joint_positions"],
@@ -51,6 +47,6 @@ if __name__ == "__main__":
     )
 
     panda.robot.move_to_joint_positions(traj["joint_positions"][0])
-    panda.robot.send_torch_policy(policy)
+    panda.load_policy(policy)
 
 
