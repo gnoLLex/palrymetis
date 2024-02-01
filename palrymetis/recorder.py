@@ -8,7 +8,7 @@ from queue import Queue
 from typing import Optional, List
 
 from polymetis_pb2 import RobotState
-from .panda import Panda
+from palrymetis import Panda
 
 ROBOT_STATE_MEMBERS = [
         'joint_positions',
@@ -41,6 +41,7 @@ class Recorder:
         """
         """
         self.logger = spdlog.ConsoleLogger("recorder")
+        #self.logger.set_level(spdlog.LogLevel.DEBUG)
         self.panda = panda
         self.recordings = {}
         self.running = running
@@ -73,27 +74,28 @@ class Recorder:
         last_timestamp = 0
         while self.running():
             if self.record:
-                state = self.panda.robot.get_robot_state()
-                gripper_state = self.panda.gripper.get_state()
+                state = self.panda.get_state()
 
                 # skip if we receive the same state
-                if not self.last_timestamp == state.timestamp:
+                if not self.last_timestamp == state["robot"].timestamp:
                     for sub in self.subscriptions:
                         if sub in GRIPPER_STATE_MEMBERS:
-                            self.recordings[sub].append(getattr(gripper_state, sub))
+                            self.recordings[sub].append(getattr(state["gripper"], sub))
                         else:
-                            self.recordings[sub].append(getattr(state, sub))
+                            self.recordings[sub].append(getattr(state["robot"], sub))
                     self.i += 1
                     delta = self.t0 + self.period * self.i - time.time()
                     if delta > 0:
                         time.sleep(delta)
 
-                last_timestamp = state.timestamp
+                last_timestamp = state["robot"].timestamp
 
     def start(self):
+        self.logger.info("Started recording")
         self.record = True
 
     def stop(self):
+        self.logger.info("Stopped recording")
         self.record = False
 
     def cleanup(self):
