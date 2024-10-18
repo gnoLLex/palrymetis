@@ -21,7 +21,7 @@ get_robot_attr() {
 }
 
 
-try_activate_env polymetis
+try_activate_env async_gripper_polymetis
 
 if [[ $1 == "robot" ]]; then
     launch_robot.py robot_client=franka_hardware robot_client.executable_cfg.robot_ip=$(get_robot_attr $2 robot_ip) port=$(get_robot_attr $2 robot_port)

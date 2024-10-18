@@ -1,3 +1,4 @@
+import time
 import torch
 import spdlog
 import signal
@@ -9,13 +10,26 @@ from palrymetis.panda import Panda
 from palrymetis.controllers import HumanController, ImitationController
 from polymetis import RobotInterface
 
+import math
 
-GRIPPER_LOWER_BOUND = 0.01
+def generate_sinusoidal_value(frequency=0.0005, phase=0, t=0):
+    # Generate a sinusoidal value in the range of 0.015 to 0.075
+    amplitude = (0.075 - 0.015) / 2
+    offset = 0.015 + amplitude  # Center of the range
+
+    sinusoidal_value = amplitude * math.sin(2 * math.pi * frequency * t + phase) + offset
+    return sinusoidal_value
+
+GRIPPER_HZ = 3
+GRIPPER_LOWER_BOUND = 0.015
 GRIPPER_UPPER_BOUND = 0.075
-GRIPPER_SPEED = 1.0
-GRIPPER_FORCE = 20.0
-GRIPPER_GRASP_THRESHOLD = 0.04
+GRIPPER_SPEED_MIN = 0.0
+GRIPPER_SPEED_MAX = 0.07
+GRIPPER_FORCE_MIN = 30.0
+GRIPPER_FORCE_MAX = 70.0
+GRIPPER_GRASP_THRESHOLD = 0.01
 GRIPPER_OPEN_THRESHOLD = 0.05
+NEXT_GRIPPER_COMMAND_WIDTH_THRESHOLD = 0.0005
 
 class Teleoperation:
     def __init__(self, operated_panda: Panda, imitator_panda: Panda):
@@ -42,8 +56,9 @@ class Teleoperation:
 
     def run(self):
         self.running = True
-        last_command = "move"
         last_issued = -1
+        timestamp = time.time()
+        t = 0
         while self.running:
             if not self.operated_panda.is_running_policy():
                 self.operated_panda.load_policy()
@@ -56,29 +71,20 @@ class Teleoperation:
             self.imitator_panda.robot.update_desired_joint_positions(joint_pos_desired)
 
             # mirror gripper state for now only binary (grasping fully or moving to fully open)
-            desired_gripper_width = self.operated_panda.get_state()["gripper"].width
+            # desired_gripper_width = self.operated_panda.get_state()["gripper"].width
+            desired_gripper_width = generate_sinusoidal_value(t=t)
 
-            if desired_gripper_width < GRIPPER_GRASP_THRESHOLD and last_command == "move":
-                self.logger.debug("Grasping")
-                self.imitator_panda.gripper.grasp(
-                    grasp_width=GRIPPER_LOWER_BOUND,
-                    speed=GRIPPER_SPEED,
-                    force=GRIPPER_FORCE,
-                    epsilon_inner=0.01,
-                    epsilon_outer=0.2,
-                )
-
-                last_command = "grasp"
-
-            elif desired_gripper_width > GRIPPER_OPEN_THRESHOLD and last_command == "grasp":
-                self.logger.debug("Moving")
+            
+            now = time.time()
+            if abs(last_issued - desired_gripper_width) > NEXT_GRIPPER_COMMAND_WIDTH_THRESHOLD and now - timestamp >= 1 / GRIPPER_HZ:
+                print(desired_gripper_width)
                 self.imitator_panda.gripper.goto(
-                        width=GRIPPER_UPPER_BOUND,
-                        speed=GRIPPER_SPEED,
-                        force=GRIPPER_FORCE,
+                    width=min(GRIPPER_UPPER_BOUND, desired_gripper_width),
+                    speed=GRIPPER_SPEED_MAX,
+                    force=GRIPPER_FORCE_MAX,
                 )
-
-                last_command = "move"
+                timestamp = now
+            t += 1
             
 
     def __sig_handler(self, _sig, _frame):
